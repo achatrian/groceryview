@@ -27,8 +27,23 @@
     </dependency>
     <dependency> <!-- https://mvnrepository.com/artifact/org.bytedeco/javacv-platform   - added to capture images-->
       <groupId>org.bytedeco</groupId>
-        <artifactId>javacv-platform</artifactId>
+      <artifactId>javacv-platform</artifactId>
       <version>1.5.5</version>
+    </dependency>
+    <dependency>
+      <groupId>net.sourceforge.tess4j</groupId>
+      <artifactId>tess4j</artifactId>
+      <version>5.5.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.7.32</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.2.6</version>
     </dependency>
   </dependencies>
 

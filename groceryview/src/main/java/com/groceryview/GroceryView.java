@@ -22,7 +22,10 @@ import java.io.IOException;
     public static final int GROCERYVIEW_WIDTH = 1600;
     public static final int GROCERYVIEW_HEIGHT = 800;
     // Image of receipt to display after upload
+    String imagePath;
     BufferedImage receiptImage;
+    String extractedText;
+    JTextArea textArea;
 
     public GroceryView() {
         setTitle("GroceryView");
@@ -45,7 +48,16 @@ import java.io.IOException;
         JPanel imagePanel = new ImagePanel();
         showImagePanel.add(imagePanel, BorderLayout.CENTER);
 
+        JPanel displayTextPanel = new JPanel();
+        displayTextPanel.setLayout(new BorderLayout());
+        textArea = new JTextArea();
+        JButton extractTextButton = new JButton("Extract Text");
+        extractTextButton.addActionListener(new ExtractTextListener());
+        displayTextPanel.add(extractTextButton, BorderLayout.SOUTH);
+        displayTextPanel.add(new JScrollPane(textArea), BorderLayout.CENTER);
+
         receiptScanPanel.add(showImagePanel);
+        receiptScanPanel.add(displayTextPanel);
         tabPanel.addTab("Scan Receipts", receiptScanPanel);
         
         
@@ -80,9 +92,10 @@ import java.io.IOException;
             fileChooser.setAcceptAllFileFilterUsed(false);
             int result = fileChooser.showOpenDialog(null);
             if (result == JFileChooser.APPROVE_OPTION) {
-                String path = fileChooser.getSelectedFile().getAbsolutePath();
-                System.out.println("Selected file: " + path);
-                File input = new File(path);
+                // groceryview instance variable imagePath
+                imagePath = fileChooser.getSelectedFile().getAbsolutePath();
+                System.out.println("Selected file: " + imagePath);
+                File input = new File(imagePath);
                 try {
                     receiptImage = ImageIO.read(input);
                     if (receiptImage == null || receiptImage.getWidth() <= 0 || receiptImage.getHeight() <= 0) {
@@ -97,6 +110,26 @@ import java.io.IOException;
         }
     }
 
+    private class ExtractTextListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (imagePath == null || imagePath.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Please upload an image first", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            try {
+                extractedText = ImageTextExtractor.extractText(imagePath);
+                System.out.println("Extracted text:");
+                System.out.println(extractedText);
+                textArea.setText(extractedText);
+            } catch (Exception ex) {
+                System.out.println("Error extracting text: " + ex.getMessage());
+                JOptionPane.showMessageDialog(null, "Error extracting text: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    };
+
+    // Class to display image in panel
     private class ImagePanel extends JPanel {
         @Override
         protected void paintComponent(Graphics g) {
@@ -121,6 +154,9 @@ import java.io.IOException;
             }
         }
     }
+
+    // Tesseract reading class
+    
     /*
      * End of util classes
      */

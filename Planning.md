@@ -20,5 +20,6 @@ Other JVM arguments or system properties. -->
 - Create a visualization of the table data obtained from the receipt image
 - Create statistics to visualize once many images have been collected
 - Different tabs for the two windows
+- Analyse the receipt, extract prices and item names ...
 
 

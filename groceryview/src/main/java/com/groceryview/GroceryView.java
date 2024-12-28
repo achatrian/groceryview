@@ -8,7 +8,7 @@ import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
-
+import javax.swing.table.DefaultTableModel;
 
 
 /**
@@ -26,6 +26,7 @@ import java.io.IOException;
     BufferedImage receiptImage;
     String extractedText;
     JTextArea textArea;
+    JTable receiptItemsTable;
 
     public GroceryView() {
         setTitle("GroceryView");
@@ -36,10 +37,12 @@ import java.io.IOException;
         // Holds tabs for receipt scanning window and statistics window
         JTabbedPane tabPanel = new JTabbedPane();
         
+        // start Scan Receipt tab
         // First panel for scanning receipts and displaying in table form
         JPanel receiptScanPanel = new JPanel();
-        receiptScanPanel.setLayout(new GridLayout(1, 2));
+        receiptScanPanel.setLayout(new GridLayout(1, 3));
         
+        // Panel for displaying the uploaed image
         JPanel showImagePanel = new JPanel();
         showImagePanel.setLayout(new BorderLayout());
         JButton uploadImageButton = new JButton("Upload Image");
@@ -48,6 +51,7 @@ import java.io.IOException;
         JPanel imagePanel = new ImagePanel();
         showImagePanel.add(imagePanel, BorderLayout.CENTER);
 
+        // Panel to dispaly the extracted text
         JPanel displayTextPanel = new JPanel();
         displayTextPanel.setLayout(new BorderLayout());
         textArea = new JTextArea();
@@ -56,12 +60,21 @@ import java.io.IOException;
         displayTextPanel.add(extractTextButton, BorderLayout.SOUTH);
         displayTextPanel.add(new JScrollPane(textArea), BorderLayout.CENTER);
 
+        // Panel to show output receipt items in table form
+        JPanel receiptItemsPanel = new JPanel();
+        receiptItemsPanel.setLayout(new BorderLayout());
+        receiptItemsTable = new JTable();
+        receiptItemsPanel.add(new JScrollPane(receiptItemsTable), BorderLayout.CENTER);
+        
+        
         receiptScanPanel.add(showImagePanel);
         receiptScanPanel.add(displayTextPanel);
+        receiptScanPanel.add(receiptItemsPanel);
         tabPanel.addTab("Scan Receipts", receiptScanPanel);
+        // end Scan Receipt tab
         
         
-        // Second panel for displaying statistics
+        // Second tab for displaying statistics
         JPanel analysisPanel = new JPanel();
         analysisPanel.add(new JLabel("Analyse the scanned receipts data here"));
         tabPanel.addTab("Analysis", analysisPanel);
@@ -109,7 +122,7 @@ import java.io.IOException;
             }
         }
     }
-
+    // Class to handle extract text button click
     private class ExtractTextListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -122,6 +135,13 @@ import java.io.IOException;
                 System.out.println("Extracted text:");
                 System.out.println(extractedText);
                 textArea.setText(extractedText);
+                // Crate a receipt object to extract items
+                Receipt receipt = new Receipt(extractedText);
+                receiptItemsTable.setModel(new DefaultTableModel(
+                    receipt.itemsToDataArray(), 
+                    new String[] {"Item", "VAT", "Price"}
+                ));
+
             } catch (Exception ex) {
                 System.out.println("Error extracting text: " + ex.getMessage());
                 JOptionPane.showMessageDialog(null, "Error extracting text: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -135,12 +155,14 @@ import java.io.IOException;
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             if (receiptImage != null && receiptImage.getWidth() > 0 && receiptImage.getHeight() > 0) {
-                System.out.println("Frame dimensions: " + GROCERYVIEW_WIDTH + "x" + GROCERYVIEW_HEIGHT);
+                Integer parentPanelWidth = this.getParent().getWidth();
+                Integer parentPanelHeight = this.getParent().getHeight();
+                System.out.println("Frame dimensions: " + parentPanelWidth + "x" + parentPanelHeight);
                 // Scale image so it can be viewed in image panel
-                int newWidth = GROCERYVIEW_WIDTH / 2;
+                int newWidth = parentPanelWidth;
                 int newHeight = (int) ((double) receiptImage.getHeight() / receiptImage.getWidth() * newWidth);
-                if (newHeight > GROCERYVIEW_HEIGHT) {
-                    newHeight = GROCERYVIEW_HEIGHT - 50;
+                if (newHeight > parentPanelHeight) {
+                    newHeight = parentPanelHeight - 10;
                     newWidth = (int) ((double) receiptImage.getWidth() / receiptImage.getHeight() * newHeight);
                 }
                 System.out.println("New image dimensions: " + newWidth + "x" + newHeight);

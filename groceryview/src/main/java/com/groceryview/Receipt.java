@@ -9,17 +9,25 @@ import java.util.ArrayList;
 
 public class Receipt {
     public final String receiptItemPattern = "T ((?:\\w*\\s*)*)\\s(\\d{1,2},\\s{0,1}\\d\\d\\%)\\s(\\d{1,2},\\d\\d)";
-    public final String totalPaidPattern = "Importo Pagato (\\d{1,2},\\d\\d)";
+    public final String totalPaidPattern = "(?:Totale complessivo|Importo pagato)\\s*(\\d{1,2},\\d{1,2})";
     private ArrayList<ReceiptItem> items;
     private ArrayList<String> receiptHeader;
     private ArrayList<String> receiptFooter;
     private Float totalPaid;
     private String receiptDate; // field to store the date the receipt was created
+    private int receiptId; // field to store the id of the receipt in the database
     
     /*  
     Regular expression to extract items from a receipt, e.g. "T BANANAS 1.99% 2.99"
     First group is the item name, second group is the VAT, third group is the total price 
     */
+
+    public Receipt() {
+        items = new ArrayList<ReceiptItem>();
+        totalPaid = null;
+        receiptDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        receiptId = -1;
+    }
 
     public Receipt(String text) {
         items = extractReceiptItems(text);
@@ -32,6 +40,8 @@ public class Receipt {
         }
         receiptDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         System.out.println("Receipt Date: " + receiptDate);
+
+        receiptId = -1;
     }
 
     public  ArrayList<ReceiptItem> extractReceiptItems(String text) {
@@ -96,6 +106,7 @@ public class Receipt {
         return data;
     }
 
+    // Getters and setters
     public Float getTotalPaid() {
         return totalPaid;
     }
@@ -108,15 +119,22 @@ public class Receipt {
         return items;
     }
 
-    // public Float getTotal() {
-    //     Float total = 0.0f;
-    //     for (ReceiptItem item : items) {
-    //         total += item.getPrice();
-    //     }
-    //     return total;
-    // }
+    public int getReceiptId() {
+        return receiptId;
+    }
 
+    public void setTotalPaid(Float totalPaid) {
+        this.totalPaid = totalPaid;
+    }
 
+    public void setReceiptDate(String receiptDate) {
+        this.receiptDate = receiptDate;
+    }
+
+    public void setReceiptId(int receiptId) {
+        this.receiptId = receiptId;
+    }
+    // end of getters and setters
     
     /*
      * Class to represent receipt items

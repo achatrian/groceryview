@@ -1,7 +1,10 @@
 package com.groceryview;
 
-import java.io.File;
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+
 
 /* 
 * Class containing the database configuration to manage two tables:
@@ -58,6 +61,7 @@ public class DatabaseConfig {
                 pstmt.executeUpdate();
             } catch (SQLException e) {
                 e.printStackTrace();
+                return -1;
             }
             // Retrieve the generated receipt_id using LAST_INSERT_ROWID()
             String lastInsertIdSql = "SELECT LAST_INSERT_ROWID() AS receipt_id";
@@ -75,6 +79,30 @@ public class DatabaseConfig {
             }
             return receiptId;
         }
+
+        public ArrayList<Receipt> getReceiptsByDate(int monthsWindow) {
+            // get current month
+            LocalDate currentDate = LocalDate.now();
+            String sql = "SELECT * FROM receipts WHERE date_added BETWEEN ? AND ?";
+            try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+                pstmt.setString(1, currentDate.minusMonths(monthsWindow).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+                pstmt.setString(2, currentDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+                ResultSet resultSet = pstmt.executeQuery();
+                ArrayList<Receipt> receipts = new ArrayList<>();
+                while (resultSet.next()) {
+                    Receipt receipt = new Receipt();
+                    receipt.setReceiptId(resultSet.getInt("receipt_id"));
+                    receipt.setReceiptDate(resultSet.getString("date_added"));
+                    receipt.setTotalPaid(resultSet.getFloat("total"));
+                    receipts.add(receipt);
+                }
+                return receipts;
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
     }
     
     // DAO (data access object) class for the receipt items
@@ -111,5 +139,7 @@ public class DatabaseConfig {
                 e.printStackTrace();
             }
         }
+
+
     }
 }

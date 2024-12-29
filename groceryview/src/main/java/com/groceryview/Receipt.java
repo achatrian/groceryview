@@ -1,6 +1,7 @@
 package com.groceryview;
 
-
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.ArrayList;
@@ -8,10 +9,13 @@ import java.util.ArrayList;
 
 public class Receipt {
     public final String receiptItemPattern = "T ((?:\\w*\\s*)*)\\s(\\d{1,2},\\s{0,1}\\d\\d\\%)\\s(\\d{1,2},\\d\\d)";
-    ArrayList<ReceiptItem> items;
-    ArrayList<String> receiptHeader;
-    ArrayList<String> receiptFooter;
-
+    public final String totalPaidPattern = "Importo Pagato (\\d{1,2},\\d\\d)";
+    private ArrayList<ReceiptItem> items;
+    private ArrayList<String> receiptHeader;
+    private ArrayList<String> receiptFooter;
+    private Float totalPaid;
+    private String receiptDate; // field to store the date the receipt was created
+    
     /*  
     Regular expression to extract items from a receipt, e.g. "T BANANAS 1.99% 2.99"
     First group is the item name, second group is the VAT, third group is the total price 
@@ -22,6 +26,12 @@ public class Receipt {
         for (ReceiptItem item : items) {
             System.out.println("Item: " + item.getName() + ", VAT: " + item.getVat() + ", Price: " + item.getPrice());
         }
+        totalPaid = extractTotalPaid();
+        if (totalPaid != null) {
+            System.out.println("Total Paid: " + totalPaid);
+        }
+        receiptDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        System.out.println("Receipt Date: " + receiptDate);
     }
 
     public  ArrayList<ReceiptItem> extractReceiptItems(String text) {
@@ -60,6 +70,20 @@ public class Receipt {
         return items;
     }
 
+    public Float extractTotalPaid() {
+        Pattern pattern = Pattern.compile(totalPaidPattern);
+        for (String line : receiptFooter) {
+            Matcher matcher = pattern.matcher(line);
+            if (matcher.find()) {
+                String totalPaidStr = matcher.group(1).replace(",", ".");
+                System.out.println("Total Paid: " + totalPaidStr);
+                return Float.parseFloat(totalPaidStr);
+            }
+        }
+        System.out.println("Total Paid not found");
+        return null;
+    }
+
     // export items to a 2D array for display in a JTable
     public String[][] itemsToDataArray() {
         String[][] data = new String[items.size()][3];
@@ -71,6 +95,28 @@ public class Receipt {
         }
         return data;
     }
+
+    public Float getTotalPaid() {
+        return totalPaid;
+    }
+
+    public String getReceiptDate() {
+        return receiptDate;
+    }
+
+    public ArrayList<ReceiptItem> getItems() {
+        return items;
+    }
+
+    // public Float getTotal() {
+    //     Float total = 0.0f;
+    //     for (ReceiptItem item : items) {
+    //         total += item.getPrice();
+    //     }
+    //     return total;
+    // }
+
+
     
     /*
      * Class to represent receipt items

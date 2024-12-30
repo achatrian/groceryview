@@ -8,8 +8,17 @@ import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Date;
 import javax.swing.table.DefaultTableModel;
+import org.jfree.data.time.TimeSeries;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+
 import java.util.ArrayList;
+import java.util.Calendar;
 
 
 /**
@@ -28,12 +37,13 @@ import java.util.ArrayList;
     String imagePath;
     BufferedImage receiptImage;
     String extractedText;
+    String customReceiptDate;
     // end receipt scan tab variables
 
     // analysis tab variables
     String querySelectedWindow = "1 month";
-    ArrayList<Receipt> receipts;
-    ArrayList<Receipt.ReceiptItem> items;
+    // ArrayList<Receipt> receipts;
+    // ArrayList<Receipt.ReceiptItem> items;
     // end analysis tab variables
 
     // Swing components
@@ -45,6 +55,9 @@ import java.util.ArrayList;
     DefaultTableModel receiptsTableModel;
     JTable itemsTable;
     DefaultTableModel itemsTableModel;
+    JPanel chartsPanel;
+    ChartPanel totalPaidChartPanel;
+    JButton plotChartsButton;
 
     public GroceryView() {
         setTitle("GroceryView");
@@ -86,6 +99,31 @@ import java.util.ArrayList;
         receiptItemsPanel.setLayout(new BorderLayout());
         receiptItemsTable = new JTable();
         receiptItemsPanel.add(new JScrollPane(receiptItemsTable), BorderLayout.CENTER);
+        // Add custom receipt date textarea and button
+        JPanel customDatePanel = new JPanel(new GridLayout(1, 4));
+        JComboBox<Integer> customDateYearBox = new JComboBox<Integer>();
+        int currentYear = Calendar.getInstance().get(Calendar.YEAR);
+        for (int i = 2020; i <= currentYear; i++) {
+            customDateYearBox.addItem(i);
+        }
+        JComboBox<Integer> customDateMonthBox = new JComboBox<Integer>();
+        for (int i = 1; i <= 12; i++) {
+            customDateMonthBox.addItem(i);
+        }
+        JComboBox<Integer> customDateDayBox = new JComboBox<Integer>();
+        for (int i = 1; i <= 31; i++) {
+            customDateDayBox.addItem(i);
+        }
+        JButton setDateButton = new JButton("Set Receipt Date");
+        setDateButton.addActionListener(e -> {
+            customReceiptDate = customDateYearBox.getSelectedItem() + "-" + customDateMonthBox.getSelectedItem() + "-" + customDateDayBox.getSelectedItem();
+        });
+        customDatePanel.add(customDateDayBox);
+        customDatePanel.add(customDateMonthBox);
+        customDatePanel.add(customDateYearBox);
+        customDatePanel.add(setDateButton);
+        receiptItemsPanel.add(customDatePanel, BorderLayout.NORTH);
+
         saveItemsButton = new JButton("Save Receipt");
         saveItemsButton.addActionListener(new SaveItemsListener());
         if (extractedText == null || extractedText.isEmpty()) {
@@ -123,7 +161,7 @@ import java.util.ArrayList;
         selectQueryPanel.add(chooseTimePanel, BorderLayout.NORTH);
 
         JButton runQueryButton = new JButton("Run Query");
-        runQueryButton.addActionListener(new ReceiptQueryListener());
+        runQueryButton.addActionListener(new PopulateTablesListener());
         selectQueryPanel.add(runQueryButton, BorderLayout.SOUTH);
         // table to display queries results
         JPanel tablesPanel = new JPanel();
@@ -148,22 +186,65 @@ import java.util.ArrayList;
         // end query panel
 
         // panel to display charts
-        JPanel chartsPanel = new JPanel();
-        chartsPanel.setLayout(new GridLayout(2, 1));
-        JPanel totalPaidChartPanel = ChartDrawer.createTotalPaidChartPanel(
-            ChartDrawer.makeExampleChartData()
-        );
-        chartsPanel.add(totalPaidChartPanel);
-        // TODO insert charts of receipts statistics    
-
+        chartsPanel = new JPanel();
+        chartsPanel.setLayout(new BorderLayout());
+        plotChartsButton = new JButton("Plot Charts");
+        plotChartsButton.addActionListener(new PlotChartListener());
+        if (receiptsTable == null || receiptsTable.getRowCount() == 0) {
+            plotChartsButton.setEnabled(false);
+        }
+        if (totalPaidChartPanel == null) {
+            totalPaidChartPanel = new ChartPanel(null);
+        }
+        chartsPanel.add(totalPaidChartPanel, BorderLayout.CENTER);
+        chartsPanel.add(plotChartsButton, BorderLayout.SOUTH);
         analysisPanel.add(selectQueryPanel);
-        analysisPanel.add(totalPaidChartPanel);
+        analysisPanel.add(chartsPanel);
         
         tabPanel.addTab("Analysis", analysisPanel);
         // end analysis tab
 
         this.add(tabPanel);  // add tab panel to main frame
 
+    }
+
+    // query database for receipts
+    public ArrayList<Receipt> queryForReceipts() {
+        ArrayList<Receipt> receipts = new ArrayList<Receipt>();
+        DatabaseConfig.getConnection();
+        try {
+            DatabaseConfig.ReceiptDAO receiptDAO = new DatabaseConfig.ReceiptDAO();
+            receipts = receiptDAO.getReceiptsByDate(Integer.parseInt(querySelectedWindow.split(" ")[0]));
+            if (receipts == null) {
+                throw new Exception("Error retrieving receipts from database");
+            }
+        } catch (Exception ex) {
+            System.out.println("Error running query: " + ex.getMessage());
+            JOptionPane.showMessageDialog(null, "Error running query: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        return receipts;
+    }
+
+    // query database for receipt items
+    public ArrayList<Receipt.ReceiptItem> queryForReceiptItems() {
+        ArrayList<Receipt> receipts = queryForReceipts();
+        ArrayList<Receipt.ReceiptItem> items = new ArrayList<Receipt.ReceiptItem>();
+        try {
+            DatabaseConfig.ReceiptItemDAO receiptItemDAO = new DatabaseConfig.ReceiptItemDAO();
+            items = new ArrayList<Receipt.ReceiptItem>();
+            for (int i = 0; i < receipts.size(); i++) {
+                int receiptId = receipts.get(i).getReceiptId();
+                ArrayList<Receipt.ReceiptItem> oneReceiptItems = receiptItemDAO.getReceiptItemsByReceiptId(receiptId);
+                oneReceiptItems.forEach(item -> item.setReceiptId(receiptId));
+                items.addAll(oneReceiptItems);
+            }
+            System.out.println("Items retrieved successfully");
+            // Display the items in a table
+        } catch (Exception ex) {
+            System.out.println("Error running query: " + ex.getMessage());
+            JOptionPane.showMessageDialog(null, "Error running query: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        return items;
     }
 
     public static void main(String[] args) {
@@ -278,6 +359,16 @@ import java.util.ArrayList;
                 DatabaseConfig.ReceiptItemDAO receiptItemDAO = new DatabaseConfig.ReceiptItemDAO();
                 receiptItemDAO.createTable();
                 Receipt receipt = new Receipt(extractedText);
+                if (customReceiptDate != null && !customReceiptDate.isEmpty()) {
+                    // change receipt date to custom date instead of current date
+                    try {
+                        LocalDate parsedDate = LocalDate.parse(customReceiptDate, DateTimeFormatter.ISO_LOCAL_DATE);
+                        receipt.setReceiptDate(parsedDate.toString());
+                    } catch (DateTimeParseException dtpe) {
+                        System.out.println("Error parsing custom receipt date: " + dtpe.getMessage());
+                        JOptionPane.showMessageDialog(null, "Error parsing custom receipt date: " + dtpe.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
                 int receiptId = receiptDAO.insertReceipt(receipt);
                 receipt.setReceiptId(receiptId);
                 if (receiptId == -1) {
@@ -298,53 +389,60 @@ import java.util.ArrayList;
     }
 
     // Listener for querying database for receipts
-    private class ReceiptQueryListener implements ActionListener {
+    private class PopulateTablesListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
             System.out.println("Running query for receipts in the last " + querySelectedWindow);
-            DatabaseConfig.getConnection();
-            try {
-                DatabaseConfig.ReceiptDAO receiptDAO = new DatabaseConfig.ReceiptDAO();
-                receipts = receiptDAO.getReceiptsByDate(Integer.parseInt(querySelectedWindow.split(" ")[0]));
-                if (receipts == null) {
-                    throw new Exception("Error retrieving receipts from database");
-                }
-                System.out.println("Receipts retrieved successfully");
-                // Display the receipts in a table
-                for (Receipt receipt : receipts) {
-                    receiptsTableModel.addRow(new Object[] {receipt.getReceiptId(), receipt.getReceiptDate(), receipt.getTotalPaid()});
-                }
-                receiptsTable.setModel(receiptsTableModel);
-
-            } catch (Exception ex) {
-                System.out.println("Error running query: " + ex.getMessage());
-                JOptionPane.showMessageDialog(null, "Error running query: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            ArrayList<Receipt> receipts = queryForReceipts();
+            // Display the receipts in a table
+            for (Receipt receipt : receipts) {
+                receiptsTableModel.addRow(new Object[] {receipt.getReceiptId(), receipt.getReceiptDate(), receipt.getTotalPaid()});
             }
+            receiptsTable.setModel(receiptsTableModel);
 
-            try {
-                DatabaseConfig.ReceiptItemDAO receiptItemDAO = new DatabaseConfig.ReceiptItemDAO();
-                items = new ArrayList<Receipt.ReceiptItem>();
-                for (int i = 0; i < receiptsTableModel.getRowCount(); i++) {
-                    int receiptId = (int) receiptsTableModel.getValueAt(i, 0);
-                    ArrayList<Receipt.ReceiptItem> oneReceiptItems = receiptItemDAO.getReceiptItemsByReceiptId(receiptId);
-                    oneReceiptItems.forEach(item -> item.setReceiptId(receiptId));
-                    items.addAll(oneReceiptItems);
-                }
-                if (items == null) {
-                    throw new Exception("Error retrieving items from database");
-                }
-                System.out.println("Items retrieved successfully");
-                // Display the items in a table
-                for (Receipt.ReceiptItem item : items) {
-                    itemsTableModel.addRow(new Object[] {item.getName(), item.getVat(), item.getPrice(), item.getReceiptId()});
-                }
-                itemsTable.setModel(itemsTableModel);
-            } catch (Exception ex) {
-                System.out.println("Error running query: " + ex.getMessage());
-                JOptionPane.showMessageDialog(null, "Error running query: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            ArrayList<Receipt.ReceiptItem> items = queryForReceiptItems();
+            // Display the items in a table
+            for (Receipt.ReceiptItem item : items) {
+                itemsTableModel.addRow(new Object[] {item.getName(), item.getVat(), item.getPrice(), item.getReceiptId()});
             }
+            itemsTable.setModel(itemsTableModel);
+            // set the plot charts button to enabled
+            plotChartsButton.setEnabled(true);
         }
     }
+
+    // Listener for plotting charts
+    public class PlotChartListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            System.out.println("Plotting charts");
+            // Create a chart for total paid
+            ArrayList<Receipt> receipts = queryForReceipts();
+            ArrayList<Date> dates = new ArrayList<Date>();
+            ArrayList<Float> totalPaid = new ArrayList<Float>();
+            for (Receipt receipt : receipts) {
+                String dateString = receipt.getReceiptDate();
+                Calendar calendar = Calendar.getInstance();
+                String[] dateParts = dateString.split("-");
+                System.out.println("Date parts: " + dateParts[0] + " " + dateParts[1] + " " + dateParts[2]);
+                calendar.set(Calendar.YEAR, Integer.parseInt(dateParts[0]));
+                calendar.set(Calendar.MONTH, Integer.parseInt(dateParts[1]));
+                calendar.set(Calendar.DATE, Integer.parseInt(dateParts[2]));
+                Date date = calendar.getTime();
+                dates.add(date);
+                totalPaid.add(receipt.getTotalPaid());
+            }
+            TimeSeries totalPaidSeries = ChartDrawer.makeTimeSeries(dates, totalPaid);
+            JFreeChart totalPaidChart = ChartDrawer.createTotalPaidChart(totalPaidSeries);
+            totalPaidChartPanel.setChart(totalPaidChart);
+            totalPaidChartPanel.revalidate();
+            totalPaidChartPanel.repaint();
+            chartsPanel.revalidate();
+            chartsPanel.repaint();
+            System.out.println("Charts plotted successfully");
+        }
+    }
+
     
     /*
      * End of util classes

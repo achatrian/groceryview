@@ -1,6 +1,5 @@
 package com.groceryview;
 
-
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -23,12 +22,14 @@ public class ChartDrawer {
         TimeSeries series = new TimeSeries("Total Paid for Groceries");
         assert dates.size() == totalPaid.size();
         for (int i = 0; i < dates.size(); i++) {
-            series.add(new Day(dates.get(i)), totalPaid.get(i));
+            // addOrUpdate will add a new value if the date is not already in the series
+            System.out.println("Adding date: " + dates.get(i) + " with total paid: " + totalPaid.get(i));
+            series.addOrUpdate(new Day(dates.get(i)), totalPaid.get(i));
         }
         return series;
     }
 
-    public static ChartPanel createTotalPaidChartPanel(TimeSeries totalPaidSeries) {
+    public static JFreeChart createTotalPaidChart(TimeSeries totalPaidSeries) {
         TimeSeriesCollection totalPaidDataset = new TimeSeriesCollection(totalPaidSeries);
         JFreeChart chart = ChartFactory.createTimeSeriesChart(
                 "Total Paid for Groceries",
@@ -39,24 +40,19 @@ public class ChartDrawer {
                 true,
                 false
         );
-        return new ChartPanel(chart);
+        return chart;
     }
     
     public static TimeSeries makeExampleChartData () {
         TimeSeries series = new TimeSeries("Total Paid for Groceries");
         ArrayList<Date> dateList = new ArrayList<>();
         Calendar calendar = Calendar.getInstance();
-        
-        // Get the current date
-        Date today = calendar.getTime();
-        
         // Populate dateList with dates from the last month
         for (int i = 0; i < 10; i++) {
-            calendar.setTime(today);
+            calendar.setTime(calendar.getTime()); // Get the current date
             calendar.add(Calendar.DAY_OF_MONTH, -(10 - i));
             dateList.add(calendar.getTime());
         }
-
         // Populate the series with random data
         for (int i = 0; i < 10; i++) {
             series.add(new Day(dateList.get(i)), (float) (Math.random() * 80));

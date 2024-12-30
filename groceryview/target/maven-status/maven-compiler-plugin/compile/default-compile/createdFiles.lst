@@ -1,4 +1,3 @@
-com/groceryview/GroceryView$ReceiptQueryListener.class
 com/groceryview/GroceryView$SaveItemsListener.class
 com/groceryview/DatabaseConfig.class
 com/groceryview/Receipt.class
@@ -7,7 +6,9 @@ com/groceryview/DatabaseConfig$ReceiptItemDAO.class
 com/groceryview/ChartDrawer.class
 com/groceryview/DatabaseConfig$ReceiptDAO.class
 com/groceryview/GroceryView.class
+com/groceryview/GroceryView$PlotChartListener.class
 com/groceryview/GroceryView$ExtractTextListener.class
+com/groceryview/GroceryView$PopulateTablesListener.class
 com/groceryview/GroceryView$ImageLoadListener.class
 com/groceryview/ImageTextExtractor.class
 com/groceryview/Receipt$ReceiptItem.class

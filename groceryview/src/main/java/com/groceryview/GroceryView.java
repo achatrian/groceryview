@@ -73,6 +73,34 @@ import java.util.Calendar;
         JPanel receiptScanPanel = new JPanel();
         receiptScanPanel.setLayout(new GridLayout(1, 3));
         
+        JPanel showImagePanel = createShowImagePanel(); // Panel for displaying the uploaed image
+        JPanel displayTextPanel = createDisplayTextPanel();  // Panel to dispaly the extracted text
+        JPanel receiptItemsPanel = createReceiptItemsPanel(); // Panel to show output receipt items in table form
+
+        receiptScanPanel.add(showImagePanel);
+        receiptScanPanel.add(displayTextPanel);
+        receiptScanPanel.add(receiptItemsPanel);
+        tabPanel.addTab("Scan Receipts", receiptScanPanel);
+        // end Scan Receipt tab
+        
+        // Second tab for displaying statistics
+        JPanel analysisPanel = new JPanel();
+        analysisPanel.setLayout(new GridLayout(1, 3));
+        JPanel selectQueryPanel = createSelectQueryPanel();  // Panel to select the time window for the query
+        JPanel chartsPanel = createChartsPanel();  // Panel to display charts
+        analysisPanel.add(selectQueryPanel);
+        analysisPanel.add(chartsPanel);
+        tabPanel.addTab("Analysis", analysisPanel);
+        // end analysis tab
+
+        this.add(tabPanel);  // add tab panel to main frame
+    }
+
+    /* 
+    Start methods to create panels
+
+    */
+    private JPanel createShowImagePanel() {
         // Panel for displaying the uploaed image
         JPanel showImagePanel = new JPanel();
         showImagePanel.setLayout(new BorderLayout());
@@ -81,8 +109,10 @@ import java.util.Calendar;
         showImagePanel.add(uploadImageButton, BorderLayout.SOUTH);
         JPanel imagePanel = new ImagePanel();
         showImagePanel.add(imagePanel, BorderLayout.CENTER);
+        return showImagePanel;
+    }
 
-        // Panel to dispaly the extracted text
+    private JPanel createDisplayTextPanel() {
         JPanel displayTextPanel = new JPanel();
         displayTextPanel.setLayout(new BorderLayout());
         textArea = new JTextArea();
@@ -93,8 +123,10 @@ import java.util.Calendar;
         if (imagePath == null || receiptImage == null) {
             extractTextButton.setEnabled(false);
         }
+        return displayTextPanel;
+    }
 
-        // Panel to show output receipt items in table form
+    private JPanel createReceiptItemsPanel() {
         JPanel receiptItemsPanel = new JPanel();
         receiptItemsPanel.setLayout(new BorderLayout());
         receiptItemsTable = new JTable();
@@ -130,17 +162,10 @@ import java.util.Calendar;
             saveItemsButton.setEnabled(false);
         };
         receiptItemsPanel.add(saveItemsButton, BorderLayout.SOUTH);
-        
-        receiptScanPanel.add(showImagePanel);
-        receiptScanPanel.add(displayTextPanel);
-        receiptScanPanel.add(receiptItemsPanel);
-        tabPanel.addTab("Scan Receipts", receiptScanPanel);
-        // end Scan Receipt tab
-        
-        
-        // Second tab for displaying statistics
-        JPanel analysisPanel = new JPanel();
-        analysisPanel.setLayout(new GridLayout(1, 3));
+        return receiptItemsPanel;
+    }
+
+    private JPanel createSelectQueryPanel() {
         JPanel selectQueryPanel = new JPanel();
         selectQueryPanel.setLayout(new BorderLayout());
 
@@ -180,11 +205,10 @@ import java.util.Calendar;
         itemsTableModel.addColumn("Receipt ID");
         tablesPanel.add(new JScrollPane(itemsTable));
         selectQueryPanel.add(tablesPanel, BorderLayout.CENTER);
-        
-        // TODO get all the items that correspond to the receipts
+        return selectQueryPanel;
+    }
 
-        // end query panel
-
+    private JPanel createChartsPanel() {
         // panel to display charts
         chartsPanel = new JPanel();
         chartsPanel.setLayout(new BorderLayout());
@@ -198,15 +222,12 @@ import java.util.Calendar;
         }
         chartsPanel.add(totalPaidChartPanel, BorderLayout.CENTER);
         chartsPanel.add(plotChartsButton, BorderLayout.SOUTH);
-        analysisPanel.add(selectQueryPanel);
-        analysisPanel.add(chartsPanel);
-        
-        tabPanel.addTab("Analysis", analysisPanel);
-        // end analysis tab
-
-        this.add(tabPanel);  // add tab panel to main frame
-
+        return chartsPanel;
     }
+
+    /* 
+    End methods to create panels 
+    */
 
     // query database for receipts
     public ArrayList<Receipt> queryForReceipts() {

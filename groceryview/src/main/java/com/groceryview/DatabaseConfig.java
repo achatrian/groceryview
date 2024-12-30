@@ -140,6 +140,26 @@ public class DatabaseConfig {
             }
         }
 
-
+        public ArrayList<Receipt.ReceiptItem> getReceiptItemsByReceiptId(int receiptId) {
+            String sql = "SELECT * FROM receiptitems WHERE receipt_id = ?";
+            try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+                pstmt.setInt(1, receiptId);
+                ResultSet resultSet = pstmt.executeQuery();
+                ArrayList<Receipt.ReceiptItem> receiptItems = new ArrayList<>();
+                Receipt receipt = new Receipt();
+                while (resultSet.next()) {
+                    Receipt.ReceiptItem receiptItem = receipt.new ReceiptItem(
+                        resultSet.getString("name"),
+                        resultSet.getString("vat"),
+                        resultSet.getFloat("price")
+                    );
+                    receiptItems.add(receiptItem);
+                }
+                return receiptItems;
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
     }
 }

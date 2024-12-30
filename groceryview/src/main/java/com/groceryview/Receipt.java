@@ -144,11 +144,13 @@ public class Receipt {
         private String name;
         private String vat;
         private Float price;
+        private int receiptId;
 
         public ReceiptItem(String name, String vat, Float price) {
             this.name = name;
             this.vat = vat;
             this.price = price;
+            this.receiptId = -1;
         }
 
         public String getName() {
@@ -163,6 +165,10 @@ public class Receipt {
             return this.price;
         }
 
+        public int getReceiptId() {
+            return this.receiptId;
+        }
+
         public void setName(String name) {
             this.name = name;
         }
@@ -173,6 +179,10 @@ public class Receipt {
 
         public void setPrice(Float price) {
             this.price = price;
+        }
+
+        public void setReceiptId(int receiptItemId) {
+            this.receiptId = receiptItemId;
         }
     }
 

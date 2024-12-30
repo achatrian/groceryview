@@ -8,6 +8,8 @@ import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
+
 import javax.swing.table.DefaultTableModel;
 import java.util.ArrayList;
 
@@ -32,6 +34,8 @@ import java.util.ArrayList;
 
     // analysis tab variables
     String querySelectedWindow = "1 month";
+    ArrayList<Receipt> receipts;
+    ArrayList<Receipt.ReceiptItem> items;
     // end analysis tab variables
 
     // Swing components
@@ -41,7 +45,8 @@ import java.util.ArrayList;
     JTable receiptItemsTable;
     JTable receiptsTable;
     DefaultTableModel receiptsTableModel;
-
+    JTable itemsTable;
+    DefaultTableModel itemsTableModel;
 
     public GroceryView() {
         setTitle("GroceryView");
@@ -102,7 +107,8 @@ import java.util.ArrayList;
         analysisPanel.setLayout(new GridLayout(1, 3));
         JPanel selectQueryPanel = new JPanel();
         selectQueryPanel.setLayout(new BorderLayout());
-        // String selectedValue = "1 month";
+
+        // panel to select the time window for the query
         JPanel chooseTimePanel = new JPanel();
         chooseTimePanel.setLayout(new GridLayout(1, 2));
         JLabel queryLabel = new JLabel("Time window for receipts:");
@@ -117,16 +123,37 @@ import java.util.ArrayList;
         chooseTimePanel.add(queryLabel);
         chooseTimePanel.add(queryComboBox);
         selectQueryPanel.add(chooseTimePanel, BorderLayout.NORTH);
+
         JButton runQueryButton = new JButton("Run Query");
         runQueryButton.addActionListener(new ReceiptQueryListener());
         selectQueryPanel.add(runQueryButton, BorderLayout.SOUTH);
         // table to display queries results
+        JPanel tablesPanel = new JPanel();
+        tablesPanel.setLayout(new GridLayout(2, 1));
         receiptsTable = new JTable();
         receiptsTableModel = new DefaultTableModel();
         receiptsTableModel.addColumn("Receipt ID");
         receiptsTableModel.addColumn("Date Added");
         receiptsTableModel.addColumn("Total");
-        selectQueryPanel.add(new JScrollPane(receiptsTable), BorderLayout.CENTER);
+        tablesPanel.add(new JScrollPane(receiptsTable));
+        itemsTable = new JTable();
+        itemsTableModel = new DefaultTableModel();
+        itemsTableModel.addColumn("Item");
+        itemsTableModel.addColumn("VAT");
+        itemsTableModel.addColumn("Price");
+        itemsTableModel.addColumn("Receipt ID");
+        tablesPanel.add(new JScrollPane(itemsTable));
+        selectQueryPanel.add(tablesPanel, BorderLayout.CENTER);
+        
+        // TODO get all the items that correspond to the receipts
+
+        // end query panel
+
+        // panel to display charts
+        JPanel chartPanel = new JPanel();
+        chartPanel.setLayout(new BorderLayout());
+        // TODO insert charts of receipts statistics
+
         analysisPanel.add(selectQueryPanel);
         
         tabPanel.addTab("Analysis", analysisPanel);
@@ -274,7 +301,7 @@ import java.util.ArrayList;
             DatabaseConfig.getConnection();
             try {
                 DatabaseConfig.ReceiptDAO receiptDAO = new DatabaseConfig.ReceiptDAO();
-                ArrayList<Receipt> receipts = receiptDAO.getReceiptsByDate(Integer.parseInt(querySelectedWindow.split(" ")[0]));
+                receipts = receiptDAO.getReceiptsByDate(Integer.parseInt(querySelectedWindow.split(" ")[0]));
                 if (receipts == null) {
                     throw new Exception("Error retrieving receipts from database");
                 }
@@ -284,6 +311,30 @@ import java.util.ArrayList;
                     receiptsTableModel.addRow(new Object[] {receipt.getReceiptId(), receipt.getReceiptDate(), receipt.getTotalPaid()});
                 }
                 receiptsTable.setModel(receiptsTableModel);
+
+            } catch (Exception ex) {
+                System.out.println("Error running query: " + ex.getMessage());
+                JOptionPane.showMessageDialog(null, "Error running query: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+
+            try {
+                DatabaseConfig.ReceiptItemDAO receiptItemDAO = new DatabaseConfig.ReceiptItemDAO();
+                items = new ArrayList<Receipt.ReceiptItem>();
+                for (int i = 0; i < receiptsTableModel.getRowCount(); i++) {
+                    int receiptId = (int) receiptsTableModel.getValueAt(i, 0);
+                    ArrayList<Receipt.ReceiptItem> oneReceiptItems = receiptItemDAO.getReceiptItemsByReceiptId(receiptId);
+                    oneReceiptItems.forEach(item -> item.setReceiptId(receiptId));
+                    items.addAll(oneReceiptItems);
+                }
+                if (items == null) {
+                    throw new Exception("Error retrieving items from database");
+                }
+                System.out.println("Items retrieved successfully");
+                // Display the items in a table
+                for (Receipt.ReceiptItem item : items) {
+                    itemsTableModel.addRow(new Object[] {item.getName(), item.getVat(), item.getPrice(), item.getReceiptId()});
+                }
+                itemsTable.setModel(itemsTableModel);
             } catch (Exception ex) {
                 System.out.println("Error running query: " + ex.getMessage());
                 JOptionPane.showMessageDialog(null, "Error running query: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);

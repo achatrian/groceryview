@@ -10,6 +10,9 @@ import javax.imageio.ImageIO;
 
 // written by Claude
 
+// Need to include dynamic library path for Tesseract
+// https://stackoverflow.com/questions/25123790/can-not-find-the-specified-module-tess4j-using-maven
+
 public class ImageTextExtractor {
     // Adjust paths based on your environment
     public static final String TESSDATA_PATH = "/usr/local/share/tessdata";

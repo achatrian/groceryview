@@ -9,7 +9,7 @@ import java.util.ArrayList;
 
 public class Receipt {
     public final String receiptItemPattern = "T ((?:\\w*\\s*)*)\\s(\\d{1,2},\\s{0,1}\\d\\d\\%)\\s(\\d{1,2},\\d\\d)";
-    public final String totalPaidPattern = "(?:Totale complessivo|Importo pagato)\\s*(\\d{1,2},\\d{1,2})";
+    public final String totalPaidPattern = "(?:[Tt]otale [Cc]omplessivo|[Ii]mporto [Pp]agato)\\s*(\\d{1,2},\\d{1,2})";
     private ArrayList<ReceiptItem> items;
     private ArrayList<String> receiptHeader;
     private ArrayList<String> receiptFooter;
@@ -133,6 +133,9 @@ public class Receipt {
 
     public void setReceiptId(int receiptId) {
         this.receiptId = receiptId;
+        for (ReceiptItem item : items) {
+            item.setReceiptId(receiptId);
+        }
     }
     // end of getters and setters
     

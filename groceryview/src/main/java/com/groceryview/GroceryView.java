@@ -8,8 +8,6 @@ import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
-
 import javax.swing.table.DefaultTableModel;
 import java.util.ArrayList;
 
@@ -150,11 +148,16 @@ import java.util.ArrayList;
         // end query panel
 
         // panel to display charts
-        JPanel chartPanel = new JPanel();
-        chartPanel.setLayout(new BorderLayout());
-        // TODO insert charts of receipts statistics
+        JPanel chartsPanel = new JPanel();
+        chartsPanel.setLayout(new GridLayout(2, 1));
+        JPanel totalPaidChartPanel = ChartDrawer.createTotalPaidChartPanel(
+            ChartDrawer.makeExampleChartData()
+        );
+        chartsPanel.add(totalPaidChartPanel);
+        // TODO insert charts of receipts statistics    
 
         analysisPanel.add(selectQueryPanel);
+        analysisPanel.add(totalPaidChartPanel);
         
         tabPanel.addTab("Analysis", analysisPanel);
         // end analysis tab
@@ -276,6 +279,7 @@ import java.util.ArrayList;
                 receiptItemDAO.createTable();
                 Receipt receipt = new Receipt(extractedText);
                 int receiptId = receiptDAO.insertReceipt(receipt);
+                receipt.setReceiptId(receiptId);
                 if (receiptId == -1) {
                     throw new Exception("Error saving receipt to database - receiptId is -1");
                 } else {
@@ -345,5 +349,4 @@ import java.util.ArrayList;
     /*
      * End of util classes
      */
-
  }

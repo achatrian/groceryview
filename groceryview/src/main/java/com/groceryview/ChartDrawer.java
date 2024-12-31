@@ -7,6 +7,7 @@ import org.jfree.chart.axis.CategoryAxis;
 import org.jfree.chart.axis.CategoryLabelPositions;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.renderer.category.BarRenderer;
+import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.statistics.HistogramDataset;
 import org.jfree.data.time.Day;
 import org.jfree.data.time.TimeSeries;
@@ -14,10 +15,15 @@ import org.jfree.data.time.TimeSeriesCollection;
 
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.lang.Math;
 
 /* Utility to create charts for receipt data */
@@ -38,7 +44,7 @@ public class ChartDrawer {
 
     public static JFreeChart createTotalPaidChart(TimeSeries totalPaidSeries) {
         TimeSeriesCollection totalPaidDataset = new TimeSeriesCollection(totalPaidSeries);
-        JFreeChart chart = ChartFactory.createTimeSeriesChart(
+        JFreeChart totalPaidTimeSeriesChart = ChartFactory.createTimeSeriesChart(
                 "Total Paid for Groceries",
                 "Date",
                 "Total Paid",
@@ -47,51 +53,57 @@ public class ChartDrawer {
                 true,
                 false
         );
-        return chart;
+        return totalPaidTimeSeriesChart;
     }
 
-    // public static JFreeChart createItemsHistogram (List<String> itemNames) {
-    //             // Map strings to unique integers
-    //     Map<String, Integer> stringToInt = new HashMap<>();
-    //     int nextInt = 0;
-    //     for (String value : itemNames) {
-    //         if (!stringToInt.containsKey(value)) {
-    //             stringToInt.put(value, nextInt++);
-    //         }
-    //     }
+    public static JFreeChart createItemFrequencyBarChart (List<String> itemNames) {
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        HashSet<String> uniqueNames = new HashSet<>();
+        itemNames.forEach(uniqueNames::add);
+        for (String uniqueName: uniqueNames) {
+            int frequency = Collections.frequency(itemNames, uniqueName);
+            dataset.addValue(frequency, "Frequency", uniqueName);
+        }
+        JFreeChart frequencyBarChart = ChartFactory.createBarChart(
+            "Grocery item frequency in receipts",
+            "Item name",
+            "Frequency",
+            dataset
+        );
+        return frequencyBarChart;
+    }
 
-    //     // Encode strings into integers
-    //     double[] encodedValues = new double[itemNames.size()];
-    //     for (int i = 0; i < itemNames.size(); i++) {
-    //         encodedValues[i] = stringToInt.get(itemNames.get(i));
-    //     }
-
-    //     // Create a histogram dataset
-    //     HistogramDataset dataset = new HistogramDataset();
-    //     dataset.addSeries("Frequency", encodedValues, stringToInt.size());
-
-    //     // Create the chart
-    //     JFreeChart histogram = ChartFactory.createHistogram(
-    //             "String Value Histogram", // Chart title
-    //             "String Values",          // X-axis label
-    //             "Frequency",              // Y-axis label
-    //             dataset                   // Dataset
-    //     );
-
-    //     // Customize x-axis labels
-    //     CategoryPlot plot = histogram.getCategoryPlot();
-    //     CategoryAxis xAxis = new CategoryAxis("String Values");
-    //     for (Map.Entry<String, Integer> entry : stringToInt.entrySet()) {
-    //         xAxis.addCategoryLabel(entry.getValue(), entry.getKey());
-    //     }
-    //     xAxis.setCategoryLabelPositions(CategoryLabelPositions.UP_90); // Rotate labels if needed
-    //     plot.setDomainAxis(xAxis);
-
-    //     // Optional: Customize renderer for better visualization
-    //     BarRenderer renderer = (BarRenderer) plot.getRenderer();
-    //     renderer.setDrawBarOutline(false);
-    //     return plot;
-    // }
+    public static JFreeChart createItemFrequencyBarChart(List<String> itemNames, int numItems) {
+        Map<String, Integer> frequencyMap = new HashMap<>();
+        for (String item : itemNames) {
+            frequencyMap.put(item, frequencyMap.getOrDefault(item, 0) + 1);
+        }
+        // Use a priority queue to find the top numItems most frequent items
+        PriorityQueue<Map.Entry<String, Integer>> pq = new PriorityQueue<>(
+                Comparator.comparingInt(Map.Entry::getValue)
+        );
+        for (Map.Entry<String, Integer> entry : frequencyMap.entrySet()) {
+            pq.offer(entry);
+            if (pq.size() > numItems) {
+                pq.poll();
+            }
+        }
+        // Extract top items and sort them by frequency in descending order
+        List<Map.Entry<String, Integer>> topItems = new ArrayList<>(pq);
+        topItems.sort((a, b) -> b.getValue() - a.getValue());
+        
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        for (Map.Entry<String, Integer> entry : topItems) {
+            dataset.addValue(entry.getValue(), "Frequency", entry.getKey());
+        }
+        JFreeChart frequencyBarChart = ChartFactory.createBarChart(
+                "Top " + numItems + " Grocery Items by Frequency",
+                "Item name",
+                "Frequency",
+                dataset
+        );
+        return frequencyBarChart;
+    }
     
     public static TimeSeries makeExampleChartData () {
         TimeSeries series = new TimeSeries("Total Paid for Groceries");

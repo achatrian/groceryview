@@ -149,9 +149,11 @@ public class DatabaseConfig {
                 Receipt receipt = new Receipt();
                 while (resultSet.next()) {
                     Receipt.ReceiptItem receiptItem = receipt.new ReceiptItem(
+                        resultSet.getInt("id"),
                         resultSet.getString("name"),
                         resultSet.getString("vat"),
-                        resultSet.getFloat("price")
+                        resultSet.getFloat("price"),
+                        receiptId
                     );
                     receiptItems.add(receiptItem);
                 }

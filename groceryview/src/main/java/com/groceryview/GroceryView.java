@@ -42,6 +42,7 @@ import java.util.Calendar;
 
     // analysis tab variables
     String querySelectedWindow = "1 month";
+    int selectedBarCharItemsNum = -1;
     // ArrayList<Receipt> receipts;
     // ArrayList<Receipt.ReceiptItem> items;
     // end analysis tab variables
@@ -57,7 +58,11 @@ import java.util.Calendar;
     DefaultTableModel itemsTableModel;
     JPanel chartsPanel;
     ChartPanel totalPaidChartPanel;
+    ChartPanel itemsFrequencyBarChartPanel;
+    JComboBox<Integer> selectNumBarChartItems;
     JButton plotChartsButton;
+    JButton clearChartsButton;
+    JButton clearTablesButton;
 
     public GroceryView() {
         setTitle("GroceryView");
@@ -68,8 +73,18 @@ import java.util.Calendar;
         // Holds tabs for receipt scanning window and statistics window
         JTabbedPane tabPanel = new JTabbedPane();
         
+        // First tab for querying receipts from database and displaying statistics
+        JPanel analysisPanel = new JPanel();
+        analysisPanel.setLayout(new GridLayout(1, 2));
+        JPanel selectQueryPanel = createSelectQueryPanel();  // Panel to select the time window for the query
+        JPanel chartsPanel = createChartsPanel();  // Panel to display charts
+        analysisPanel.add(selectQueryPanel);
+        analysisPanel.add(chartsPanel);
+        tabPanel.addTab("Analysis", analysisPanel);
+        // end analysis tab
+
         // start Scan Receipt tab
-        // First panel for scanning receipts and displaying in table form
+        // Second tab for scanning receipts and displaying in table form
         JPanel receiptScanPanel = new JPanel();
         receiptScanPanel.setLayout(new GridLayout(1, 3));
         
@@ -82,16 +97,6 @@ import java.util.Calendar;
         receiptScanPanel.add(receiptItemsPanel);
         tabPanel.addTab("Scan Receipts", receiptScanPanel);
         // end Scan Receipt tab
-        
-        // Second tab for displaying statistics
-        JPanel analysisPanel = new JPanel();
-        analysisPanel.setLayout(new GridLayout(1, 3));
-        JPanel selectQueryPanel = createSelectQueryPanel();  // Panel to select the time window for the query
-        JPanel chartsPanel = createChartsPanel();  // Panel to display charts
-        analysisPanel.add(selectQueryPanel);
-        analysisPanel.add(chartsPanel);
-        tabPanel.addTab("Analysis", analysisPanel);
-        // end analysis tab
 
         this.add(tabPanel);  // add tab panel to main frame
     }
@@ -185,9 +190,18 @@ import java.util.Calendar;
         chooseTimePanel.add(queryComboBox);
         selectQueryPanel.add(chooseTimePanel, BorderLayout.NORTH);
 
+        JPanel queryButtonsPanel = new JPanel();
+        queryButtonsPanel.setLayout(new GridLayout(1, 2));
         JButton runQueryButton = new JButton("Run Query");
         runQueryButton.addActionListener(new PopulateTablesListener());
-        selectQueryPanel.add(runQueryButton, BorderLayout.SOUTH);
+        clearTablesButton = new JButton("Clear Tables");
+        clearTablesButton.addActionListener(e -> {clearTables();});
+        if (receiptsTable == null || receiptsTable.getRowCount() == 0) {
+            clearTablesButton.setEnabled(false);
+        }
+        queryButtonsPanel.add(runQueryButton);
+        queryButtonsPanel.add(clearTablesButton);
+        selectQueryPanel.add(queryButtonsPanel, BorderLayout.SOUTH);
         // table to display queries results
         JPanel tablesPanel = new JPanel();
         tablesPanel.setLayout(new GridLayout(2, 1));
@@ -199,7 +213,8 @@ import java.util.Calendar;
         tablesPanel.add(new JScrollPane(receiptsTable));
         itemsTable = new JTable();
         itemsTableModel = new DefaultTableModel();
-        itemsTableModel.addColumn("Item");
+        itemsTableModel.addColumn("Item ID");
+        itemsTableModel.addColumn("Item Name");
         itemsTableModel.addColumn("VAT");
         itemsTableModel.addColumn("Price");
         itemsTableModel.addColumn("Receipt ID");
@@ -211,17 +226,63 @@ import java.util.Calendar;
     private JPanel createChartsPanel() {
         // panel to display charts
         chartsPanel = new JPanel();
-        chartsPanel.setLayout(new BorderLayout());
+        GridBagLayout layout = new GridBagLayout();
+        GridBagConstraints c = new GridBagConstraints();
+        c.fill = GridBagConstraints.BOTH;
+        chartsPanel.setLayout(layout);
+        // panel to display selection of items for histogram and plot charts button
+        JPanel chartsCommandsPanel = new JPanel();
+        chartsCommandsPanel.setLayout(new GridLayout(2, 2));
+        selectNumBarChartItems = new JComboBox<>();
+        selectNumBarChartItems.addActionListener(e -> {
+            JComboBox<Integer> cb = (JComboBox<Integer>) e.getSource();
+            selectedBarCharItemsNum = (int) cb.getSelectedItem();
+        });
+        JLabel selectNumLabel = new JLabel("    Number of frequency plot items:");
         plotChartsButton = new JButton("Plot Charts");
         plotChartsButton.addActionListener(new PlotChartListener());
+        clearChartsButton = new JButton("Clear Charts");
+        clearChartsButton.addActionListener(e -> {
+            totalPaidChartPanel.setChart(null);
+            itemsFrequencyBarChartPanel.setChart(null);
+            clearChartsButton.setEnabled(false);
+        });
         if (receiptsTable == null || receiptsTable.getRowCount() == 0) {
+            selectNumBarChartItems.setEnabled(false);
             plotChartsButton.setEnabled(false);
+            clearChartsButton.setEnabled(false);
         }
+        chartsCommandsPanel.add(selectNumLabel);
+        chartsCommandsPanel.add(selectNumBarChartItems);
+        chartsCommandsPanel.add(plotChartsButton);
+        chartsCommandsPanel.add(clearChartsButton);
         if (totalPaidChartPanel == null) {
             totalPaidChartPanel = new ChartPanel(null);
         }
-        chartsPanel.add(totalPaidChartPanel, BorderLayout.CENTER);
-        chartsPanel.add(plotChartsButton, BorderLayout.SOUTH);
+        if (itemsFrequencyBarChartPanel == null) {
+            itemsFrequencyBarChartPanel = new ChartPanel(null);
+        }
+        c.gridheight = 50;
+        c.gridy = 0;
+        c.weighty = 1.0;
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        c.weightx = 1.0;
+        layout.setConstraints(totalPaidChartPanel, c);
+        c.gridheight = 50;
+        c.gridy = 50;
+        c.weighty = 1.0;
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        c.weightx = 1.0;
+        layout.setConstraints(itemsFrequencyBarChartPanel, c);
+        c.gridy = 100;
+        c.gridheight = 1;
+        c.weighty = 0.05;
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        c.weightx = 1.0;
+        layout.setConstraints(chartsCommandsPanel, c);
+        chartsPanel.add(totalPaidChartPanel);   
+        chartsPanel.add(itemsFrequencyBarChartPanel);
+        chartsPanel.add(chartsCommandsPanel);
         return chartsPanel;
     }
 
@@ -266,6 +327,18 @@ import java.util.Calendar;
             JOptionPane.showMessageDialog(null, "Error running query: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
         return items;
+    }
+
+    // method to clear receipts and items table, called by pressing button or before a new query
+    public void clearTables() {
+        DefaultTableModel dtmReceipts = (DefaultTableModel) receiptsTable.getModel();
+        dtmReceipts.setRowCount(0);
+        DefaultTableModel dtmItems = (DefaultTableModel) itemsTable.getModel();
+        dtmItems.setRowCount(0);
+        // disable input components that use table data
+        plotChartsButton.setEnabled(false);
+        clearChartsButton.setEnabled(false);
+        selectNumBarChartItems.setEnabled(false);  
     }
 
     public static void main(String[] args) {
@@ -413,6 +486,7 @@ import java.util.Calendar;
     private class PopulateTablesListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
+            clearTables(); // clears table before populating with new data
             System.out.println("Running query for receipts in the last " + querySelectedWindow);
             ArrayList<Receipt> receipts = queryForReceipts();
             // Display the receipts in a table
@@ -424,10 +498,16 @@ import java.util.Calendar;
             ArrayList<Receipt.ReceiptItem> items = queryForReceiptItems();
             // Display the items in a table
             for (Receipt.ReceiptItem item : items) {
-                itemsTableModel.addRow(new Object[] {item.getName(), item.getVat(), item.getPrice(), item.getReceiptId()});
+                itemsTableModel.addRow(new Object[] {item.getId(), item.getName(), item.getVat(), item.getPrice(), item.getReceiptId()});
             }
             itemsTable.setModel(itemsTableModel);
             // set the plot charts button to enabled
+            for (int i = 1; i < itemsTable.getRowCount(); i++) {
+                selectNumBarChartItems.addItem(i);
+            }
+            // enable input components that use tables data
+            clearTablesButton.setEnabled(true);
+            selectNumBarChartItems.setEnabled(true);
             plotChartsButton.setEnabled(true);
         }
     }
@@ -458,9 +538,24 @@ import java.util.Calendar;
             totalPaidChartPanel.setChart(totalPaidChart);
             totalPaidChartPanel.revalidate();
             totalPaidChartPanel.repaint();
+            System.out.println("Total paid chart plotted successfully");
+
+            // Create a histogram for items
+            ArrayList<Receipt.ReceiptItem> items = queryForReceiptItems();
+            ArrayList<String> itemNames = new ArrayList<String>();
+            items.stream().map(item -> item.getName()).forEach(itemNames::add);
+            JFreeChart itemsFrequencyBarChart = selectedBarCharItemsNum > 1 ? 
+                ChartDrawer.createItemFrequencyBarChart(itemNames, selectedBarCharItemsNum) :
+                ChartDrawer.createItemFrequencyBarChart(itemNames);
+            itemsFrequencyBarChartPanel.setChart(itemsFrequencyBarChart);
+            itemsFrequencyBarChartPanel.revalidate();
+            itemsFrequencyBarChartPanel.repaint();
+            System.out.println("Item historgram chart plotted successfully");
+
             chartsPanel.revalidate();
             chartsPanel.repaint();
-            System.out.println("Charts plotted successfully");
+            // enable clear charts button
+            clearChartsButton.setEnabled(true);
         }
     }
 

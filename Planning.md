@@ -1,6 +1,3 @@
-# How to run code:
-./launch_groceryview.sh
-
 # Plan
 - [x] Create a window for the possibility to add a receipt image and scan it for data
 - [x] Create a visualization of the table data obtained from the receipt image

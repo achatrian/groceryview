@@ -7,7 +7,7 @@ Optical character recognition is then used to scan the receipt picture for groce
 The receipt data (i.e. the total paid and date) and the items data is stored in a sqlite database.
 
 
-# to launch the app:
+## to launch the app:
 One needs to install libtesseract.dylib.
 Install it with homebrew
 `brew install tesseract`

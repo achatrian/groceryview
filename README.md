@@ -18,8 +18,16 @@ or to:
 
 
 ## App view:
-- Scan your receipt:
-![alt text](scan_tab.png)
-
-- Analyse the results
+### Analysis tab
+- Analyse the results:
+- Query the database for receipts and the grocery items
+- Display receipt expenses over time
+- Show top item frequency
 ![alt text](analysis_tab.png)
+
+### Scan tab
+- Scan your receipt:
+- Upload an image of your receipt
+- Use optical character recognition to extract text from the image
+- Save the receipt items to the database
+![alt text](scan_tab.png)

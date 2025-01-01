@@ -10,10 +10,10 @@ import java.util.ArrayList;
 public class Receipt {
     public final String receiptItemPattern = "T ((?:\\w*\\s*)*)\\s(\\d{1,2},\\s{0,1}\\d\\d\\%)\\s(\\d{1,2},\\d\\d)";
     public final String totalPaidPattern = "(?:TOTALE COMPLESSIVO|[Ii]mporto [Pp]agato)\\s*(\\d{1,2}[,.]\\d{1,2})";
-    private ArrayList<ReceiptItem> items;
-    private ArrayList<String> receiptHeader;
-    private ArrayList<String> receiptFooter;
-    private Float totalPaid;
+    private ArrayList<ReceiptItem> items; // list of items on the receipt
+    private ArrayList<String> receiptHeader; // lines of text coming before the first receipt item in the text
+    private ArrayList<String> receiptFooter; // lines of text following the last receipt item in the text
+    private Float totalPaid; // sum amount of the receipt items prices + any additional costs
     private String receiptDate; // field to store the date the receipt was created
     private int receiptId; // field to store the id of the receipt in the database
     
@@ -22,6 +22,7 @@ public class Receipt {
     First group is the item name, second group is the VAT, third group is the total price 
     */
 
+    // Empty constructor used to make receipts that will be filled with data later
     public Receipt() {
         items = new ArrayList<ReceiptItem>();
         totalPaid = null;
@@ -29,6 +30,7 @@ public class Receipt {
         receiptId = -1;
     }
 
+    // Constructor that takes a string of text and extracts the items and total paid
     public Receipt(String text) {
         items = extractReceiptItems(text);
         for (ReceiptItem item : items) {
@@ -44,6 +46,7 @@ public class Receipt {
         receiptId = -1;
     }
 
+    // Extract the items from the text by matching against stored patterns
     public  ArrayList<ReceiptItem> extractReceiptItems(String text) {
         Pattern pattern = Pattern.compile(receiptItemPattern);
         String[] lineArray = text.split("\n");
@@ -80,6 +83,7 @@ public class Receipt {
         return items;
     }
 
+    // Extract the total paid sum from the receipt text
     public Float extractTotalPaid() {
         Pattern pattern = Pattern.compile(totalPaidPattern);
         for (String line : receiptFooter) {
@@ -94,7 +98,7 @@ public class Receipt {
         return null;
     }
 
-    // export items to a 2D array for display in a JTable
+    // Export items to a 2D array for display in a JTable
     public String[][] itemsToDataArray() {
         String[][] data = new String[items.size()][3];
         for (int i = 0; i < items.size(); i++) {
@@ -106,7 +110,7 @@ public class Receipt {
         return data;
     }
 
-    // Getters and setters
+    // getters and setters
     public Float getTotalPaid() {
         return totalPaid;
     }
@@ -144,11 +148,11 @@ public class Receipt {
      */
 
     public class ReceiptItem {
-        private int id;
+        private int id; // unique identifier to separate equal items from different receipts
         private String name;
         private String vat;
         private Float price;
-        private int receiptId;
+        private int receiptId; // stores the unique receipt identifier to trace back item to receipt
 
         public ReceiptItem(String name, String vat, Float price) {
             this.id = -1;
@@ -166,6 +170,7 @@ public class Receipt {
             this.receiptId = receiptId;
         }
 
+        // getters and setters
         public int getId() {
             return this.id;
         }
@@ -205,6 +210,6 @@ public class Receipt {
         public void setReceiptId(int receiptItemId) {
             this.receiptId = receiptItemId;
         }
+        // end getter and setters
     }
-
 }

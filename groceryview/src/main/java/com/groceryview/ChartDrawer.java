@@ -28,7 +28,6 @@ import java.lang.Math;
 
 /* Utility to create charts for receipt data */
 
-
 public class ChartDrawer {
 
     public static TimeSeries makeTimeSeries (List<Date> dates, List<Float> totalPaid) {
@@ -74,11 +73,12 @@ public class ChartDrawer {
     }
 
     public static JFreeChart createItemFrequencyBarChart(List<String> itemNames, int numItems) {
+        // Store item frequency in a map
         Map<String, Integer> frequencyMap = new HashMap<>();
         for (String item : itemNames) {
             frequencyMap.put(item, frequencyMap.getOrDefault(item, 0) + 1);
         }
-        // Use a priority queue to find the top numItems most frequent items
+        // Create new data structure where low frequency items are removed
         PriorityQueue<Map.Entry<String, Integer>> pq = new PriorityQueue<>(
                 Comparator.comparingInt(Map.Entry::getValue)
         );
@@ -105,6 +105,7 @@ public class ChartDrawer {
         return frequencyBarChart;
     }
     
+    // Generate example data for testing time series chart
     public static TimeSeries makeExampleChartData () {
         TimeSeries series = new TimeSeries("Total Paid for Groceries");
         ArrayList<Date> dateList = new ArrayList<>();

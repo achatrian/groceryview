@@ -23,7 +23,7 @@ import java.util.Calendar;
 
 /**
  * GROCERYVIEW APP:
- * Scan receipts from grocery shopping, load the prices of various good, and compute statistics over groups of related goods, etc.
+ * Scan receipts from grocery shopping, load the prices of various good, and compute and display statistics over groups of related goods, etc.
  *
  */
 
@@ -118,6 +118,7 @@ import java.util.Calendar;
     }
 
     private JPanel createDisplayTextPanel() {
+        // Panel to display text extracted from the receipt image
         JPanel displayTextPanel = new JPanel();
         displayTextPanel.setLayout(new BorderLayout());
         textArea = new JTextArea();
@@ -132,11 +133,13 @@ import java.util.Calendar;
     }
 
     private JPanel createReceiptItemsPanel() {
+        // Panel to display a table with the items interpreted from the text
         JPanel receiptItemsPanel = new JPanel();
         receiptItemsPanel.setLayout(new BorderLayout());
         receiptItemsTable = new JTable();
         receiptItemsPanel.add(new JScrollPane(receiptItemsTable), BorderLayout.CENTER);
-        // Add custom receipt date textarea and button
+        // Add select boxes to input the date when the receipt was obtained manually
+        // For receipts not obtained on the current date
         JPanel customDatePanel = new JPanel(new GridLayout(1, 4));
         JComboBox<Integer> customDateYearBox = new JComboBox<Integer>();
         int currentYear = Calendar.getInstance().get(Calendar.YEAR);
@@ -160,7 +163,7 @@ import java.util.Calendar;
         customDatePanel.add(customDateYearBox);
         customDatePanel.add(setDateButton);
         receiptItemsPanel.add(customDatePanel, BorderLayout.NORTH);
-
+        // Button to save the items extracted from the OCRed text into the database
         saveItemsButton = new JButton("Save Receipt");
         saveItemsButton.addActionListener(new SaveItemsListener());
         if (extractedText == null || extractedText.isEmpty()) {
@@ -171,6 +174,7 @@ import java.util.Calendar;
     }
 
     private JPanel createSelectQueryPanel() {
+        // Make panel to display the results of querys to the database for receipts and items
         JPanel selectQueryPanel = new JPanel();
         selectQueryPanel.setLayout(new BorderLayout());
 
@@ -178,16 +182,16 @@ import java.util.Calendar;
         JPanel chooseTimePanel = new JPanel();
         chooseTimePanel.setLayout(new GridLayout(1, 2));
         JLabel queryLabel = new JLabel("Time window for receipts:");
-        JComboBox<String> queryComboBox = new JComboBox<String>();
+        JComboBox<String> selectQueryTimeWindow = new JComboBox<String>();
         for (int i = 1; i <= 12; i++) {
-            queryComboBox.addItem(i + " months");
+            selectQueryTimeWindow.addItem(i + " months");
         }
-        queryComboBox.addActionListener(e -> {
+        selectQueryTimeWindow.addActionListener(e -> {
             JComboBox<String> cb = (JComboBox<String>) e.getSource();
             querySelectedWindow = (String) cb.getSelectedItem();
         });
         chooseTimePanel.add(queryLabel);
-        chooseTimePanel.add(queryComboBox);
+        chooseTimePanel.add(selectQueryTimeWindow);
         selectQueryPanel.add(chooseTimePanel, BorderLayout.NORTH);
 
         JPanel queryButtonsPanel = new JPanel();
@@ -202,17 +206,19 @@ import java.util.Calendar;
         queryButtonsPanel.add(runQueryButton);
         queryButtonsPanel.add(clearTablesButton);
         selectQueryPanel.add(queryButtonsPanel, BorderLayout.SOUTH);
-        // table to display queries results
+        // table to display queries results for receipts and items
         JPanel tablesPanel = new JPanel();
         tablesPanel.setLayout(new GridLayout(2, 1));
         receiptsTable = new JTable();
         receiptsTableModel = new DefaultTableModel();
+        // Receipt data fields to display in the first table
         receiptsTableModel.addColumn("Receipt ID");
         receiptsTableModel.addColumn("Date Added");
         receiptsTableModel.addColumn("Total");
         tablesPanel.add(new JScrollPane(receiptsTable));
         itemsTable = new JTable();
         itemsTableModel = new DefaultTableModel();
+        // Receipt item data fields to display in the second table
         itemsTableModel.addColumn("Item ID");
         itemsTableModel.addColumn("Item Name");
         itemsTableModel.addColumn("VAT");
@@ -233,12 +239,14 @@ import java.util.Calendar;
         // panel to display selection of items for histogram and plot charts button
         JPanel chartsCommandsPanel = new JPanel();
         chartsCommandsPanel.setLayout(new GridLayout(2, 2));
+        // combo box to select the number of items to display in the histogram
         selectNumBarChartItems = new JComboBox<>();
         selectNumBarChartItems.addActionListener(e -> {
             JComboBox<Integer> cb = (JComboBox<Integer>) e.getSource();
             selectedBarCharItemsNum = (int) cb.getSelectedItem();
         });
         JLabel selectNumLabel = new JLabel("    Number of frequency plot items:");
+        // Buttons to plot charts and to clear charts
         plotChartsButton = new JButton("Plot Charts");
         plotChartsButton.addActionListener(new PlotChartListener());
         clearChartsButton = new JButton("Clear Charts");
@@ -262,6 +270,7 @@ import java.util.Calendar;
         if (itemsFrequencyBarChartPanel == null) {
             itemsFrequencyBarChartPanel = new ChartPanel(null);
         }
+        // Arrange the charts panel and commands panel into the gridbag layout
         c.gridheight = 50;
         c.gridy = 0;
         c.weighty = 1.0;
@@ -448,13 +457,14 @@ import java.util.Calendar;
             System.out.println("Saving items to database");
             DatabaseConfig.getConnection();
             try {
+                // Get manager objects to insert the receipt and the items into the database in the respective tables
                 DatabaseConfig.ReceiptDAO receiptDAO = new DatabaseConfig.ReceiptDAO();
                 receiptDAO.createTable();
                 DatabaseConfig.ReceiptItemDAO receiptItemDAO = new DatabaseConfig.ReceiptItemDAO();
                 receiptItemDAO.createTable();
                 Receipt receipt = new Receipt(extractedText);
                 if (customReceiptDate != null && !customReceiptDate.isEmpty()) {
-                    // change receipt date to custom date instead of current date
+                    // change receipt date from default current date value to selected custom date
                     try {
                         LocalDate parsedDate = LocalDate.parse(customReceiptDate, DateTimeFormatter.ISO_LOCAL_DATE);
                         receipt.setReceiptDate(parsedDate.toString());
@@ -463,13 +473,15 @@ import java.util.Calendar;
                         JOptionPane.showMessageDialog(null, "Error parsing custom receipt date: " + dtpe.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
-                int receiptId = receiptDAO.insertReceipt(receipt);
+                // Insert the receipt into the database
+                int receiptId = receiptDAO.insertReceipt(receipt); // returns the receiptId to associate to the items
                 receipt.setReceiptId(receiptId);
                 if (receiptId == -1) {
                     throw new Exception("Error saving receipt to database - receiptId is -1");
                 } else {
                     System.out.println("Receipt saved successfully with receiptId: " + receiptId);
                 }
+                // Insert the items into the database
                 for (Receipt.ReceiptItem item : receipt.getItems()) {
                     receiptItemDAO.insertReceiptItem(item, receiptId);
                 }
@@ -517,10 +529,11 @@ import java.util.Calendar;
         @Override
         public void actionPerformed(ActionEvent e) {
             System.out.println("Plotting charts");
-            // Create a chart for total paid
+            // Create a chart to display the total paid for groceries over time in the selected time window
             ArrayList<Receipt> receipts = queryForReceipts();
             ArrayList<Date> dates = new ArrayList<Date>();
             ArrayList<Float> totalPaid = new ArrayList<Float>();
+            // Prepare the dates and the total paid values for the chart
             for (Receipt receipt : receipts) {
                 String dateString = receipt.getReceiptDate();
                 Calendar calendar = Calendar.getInstance();
@@ -533,6 +546,8 @@ import java.util.Calendar;
                 dates.add(date);
                 totalPaid.add(receipt.getTotalPaid());
             }
+            // Make charts to display in analysis tab
+            // Make the grocery expenses over time chart
             TimeSeries totalPaidSeries = ChartDrawer.makeTimeSeries(dates, totalPaid);
             JFreeChart totalPaidChart = ChartDrawer.createTotalPaidChart(totalPaidSeries);
             totalPaidChartPanel.setChart(totalPaidChart);
@@ -540,10 +555,10 @@ import java.util.Calendar;
             totalPaidChartPanel.repaint();
             System.out.println("Total paid chart plotted successfully");
 
-            // Create a histogram for items
             ArrayList<Receipt.ReceiptItem> items = queryForReceiptItems();
             ArrayList<String> itemNames = new ArrayList<String>();
             items.stream().map(item -> item.getName()).forEach(itemNames::add);
+            // Create the bar chart of item purchase frequency
             JFreeChart itemsFrequencyBarChart = selectedBarCharItemsNum > 1 ? 
                 ChartDrawer.createItemFrequencyBarChart(itemNames, selectedBarCharItemsNum) :
                 ChartDrawer.createItemFrequencyBarChart(itemNames);

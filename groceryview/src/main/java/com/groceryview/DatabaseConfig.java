@@ -53,6 +53,7 @@ public class DatabaseConfig {
             }
         }
 
+        // Insert one receipt into the receipts table
         public int insertReceipt(Receipt receipt) {
             String sql = "INSERT INTO receipts (date_added, total) VALUES (?, ?)";
             try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
@@ -80,6 +81,7 @@ public class DatabaseConfig {
             return receiptId;
         }
 
+        // Retrieve all receipts within a specified number of months
         public ArrayList<Receipt> getReceiptsByDate(int monthsWindow) {
             // get current month
             LocalDate currentDate = LocalDate.now();
@@ -89,6 +91,7 @@ public class DatabaseConfig {
                 pstmt.setString(2, currentDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
                 ResultSet resultSet = pstmt.executeQuery();
                 ArrayList<Receipt> receipts = new ArrayList<>();
+                // Iterate over all receipts within the timewindow
                 while (resultSet.next()) {
                     Receipt receipt = new Receipt();
                     receipt.setReceiptId(resultSet.getInt("receipt_id"));
@@ -127,6 +130,7 @@ public class DatabaseConfig {
             }
         }
 
+        // Insert one receipt item into the receiptitems table
         public void insertReceiptItem(Receipt.ReceiptItem receiptItem, int receiptId) {
             String sql = "INSERT INTO receiptitems (receipt_id, name, vat, price) VALUES (?, ?, ?, ?)";
             try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
@@ -140,6 +144,7 @@ public class DatabaseConfig {
             }
         }
 
+        // Retrieve all the items belonging to the same receipt
         public ArrayList<Receipt.ReceiptItem> getReceiptItemsByReceiptId(int receiptId) {
             String sql = "SELECT * FROM receiptitems WHERE receipt_id = ?";
             try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
@@ -147,6 +152,7 @@ public class DatabaseConfig {
                 ResultSet resultSet = pstmt.executeQuery();
                 ArrayList<Receipt.ReceiptItem> receiptItems = new ArrayList<>();
                 Receipt receipt = new Receipt();
+                // Iterate over all items belonging to the receipt corresponding to the receiptId value
                 while (resultSet.next()) {
                     Receipt.ReceiptItem receiptItem = receipt.new ReceiptItem(
                         resultSet.getInt("id"),

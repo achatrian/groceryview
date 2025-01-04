@@ -6,7 +6,9 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.CategoryAxis;
 import org.jfree.chart.axis.CategoryLabelPositions;
 import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.category.BarRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.statistics.HistogramDataset;
 import org.jfree.data.time.Day;
@@ -25,6 +27,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.lang.Math;
+
+import java.awt.Color;
 
 /* Utility to create charts for receipt data */
 
@@ -52,6 +56,11 @@ public class ChartDrawer {
                 true,
                 false
         );
+        XYPlot plot = totalPaidTimeSeriesChart.getXYPlot();
+        // changes chart foreground color
+        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
+        renderer.setSeriesPaint(0, Color.decode("#16821a"));
+        plot.setRenderer(0, renderer); 
         return totalPaidTimeSeriesChart;
     }
 
@@ -69,6 +78,11 @@ public class ChartDrawer {
             "Frequency",
             dataset
         );
+        // changes chart foreground color
+        CategoryPlot plot = frequencyBarChart.getCategoryPlot();
+        BarRenderer renderer = (BarRenderer) plot.getRenderer();
+        Color darkGreen = Color.decode("#16821a");        
+        renderer.setSeriesPaint(0, darkGreen);
         return frequencyBarChart;
     }
 

@@ -3,11 +3,13 @@ package com.groceryview;
 
 import java.awt.*;
 import java.awt.event.*;
+import javax.swing.border.LineBorder;
 import javax.swing.*;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
+import java.text.ListFormat.Style;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -38,6 +40,7 @@ import java.util.Calendar;
     BufferedImage receiptImage;
     String extractedText;
     String customReceiptDate;
+    float receiptTotalPaid;
     // end receipt scan tab variables
 
     // analysis tab variables
@@ -49,6 +52,8 @@ import java.util.Calendar;
 
     // Swing components
     JButton extractTextButton;
+    JButton itemizeTextButton;
+    JLabel receiptItemsLabel;
     JButton saveItemsButton;
     JTextArea textArea;
     JTable receiptItemsTable;
@@ -69,6 +74,7 @@ import java.util.Calendar;
         setSize(GROCERYVIEW_WIDTH, GROCERYVIEW_HEIGHT);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setBackground(StyleFormatter.darkGreen);
          
         // Holds tabs for receipt scanning window and statistics window
         JTabbedPane tabPanel = new JTabbedPane();
@@ -76,8 +82,11 @@ import java.util.Calendar;
         // First tab for querying receipts from database and displaying statistics
         JPanel analysisPanel = new JPanel();
         analysisPanel.setLayout(new GridLayout(1, 2));
+        
         JPanel selectQueryPanel = createSelectQueryPanel();  // Panel to select the time window for the query
+        
         JPanel chartsPanel = createChartsPanel();  // Panel to display charts
+        
         analysisPanel.add(selectQueryPanel);
         analysisPanel.add(chartsPanel);
         tabPanel.addTab("Analysis", analysisPanel);
@@ -87,6 +96,7 @@ import java.util.Calendar;
         // Second tab for scanning receipts and displaying in table form
         JPanel receiptScanPanel = new JPanel();
         receiptScanPanel.setLayout(new GridLayout(1, 3));
+        
         
         JPanel showImagePanel = createShowImagePanel(); // Panel for displaying the uploaed image
         JPanel displayTextPanel = createDisplayTextPanel();  // Panel to dispaly the extracted text
@@ -99,6 +109,13 @@ import java.util.Calendar;
         // end Scan Receipt tab
 
         this.add(tabPanel);  // add tab panel to main frame
+
+        // Styling panels
+        StyleFormatter.setGlobalStyles();
+        StyleFormatter.applyStylesRecursively(this);
+        showImagePanel.getComponent(2).setBackground(Color.WHITE);
+        getRootPane().setBorder(BorderFactory.createMatteBorder(4, 4, 4, 4, Color.darkGray));
+
     }
 
     /* 
@@ -109,6 +126,10 @@ import java.util.Calendar;
         // Panel for displaying the uploaed image
         JPanel showImagePanel = new JPanel();
         showImagePanel.setLayout(new BorderLayout());
+        JLabel receiptImageLabel = new JLabel("Scanned receipt image:", SwingConstants.CENTER);
+        receiptImageLabel.setFont(new Font("Calibri", Font.BOLD, 16));
+        
+        showImagePanel.add(receiptImageLabel, BorderLayout.NORTH);
         JButton uploadImageButton = new JButton("Upload Image");
         uploadImageButton.addActionListener(new ImageLoadListener());
         showImagePanel.add(uploadImageButton, BorderLayout.SOUTH);
@@ -122,12 +143,25 @@ import java.util.Calendar;
         JPanel displayTextPanel = new JPanel();
         displayTextPanel.setLayout(new BorderLayout());
         textArea = new JTextArea();
+        textArea.setEditable(false);
+        textArea.setEnabled(false);
+        displayTextPanel.add(new JScrollPane(textArea), BorderLayout.CENTER);
+        JLabel extractedTextLabel = new JLabel("Extracted text - edit if necessary:", SwingConstants.CENTER);
+        
+        displayTextPanel.add(extractedTextLabel, BorderLayout.NORTH);
+        JPanel textFormatPanel = new JPanel();
+        textFormatPanel.setLayout(new GridLayout(1, 2));
+        
         extractTextButton = new JButton("Extract Text");
         extractTextButton.addActionListener(new ExtractTextListener());
-        displayTextPanel.add(extractTextButton, BorderLayout.SOUTH);
-        displayTextPanel.add(new JScrollPane(textArea), BorderLayout.CENTER);
+        itemizeTextButton = new JButton("Itemize Text");
+        itemizeTextButton.addActionListener(new ItemizeTextListener());
+        textFormatPanel.add(extractTextButton);
+        textFormatPanel.add(itemizeTextButton);
+        displayTextPanel.add(textFormatPanel, BorderLayout.SOUTH);
         if (imagePath == null || receiptImage == null) {
             extractTextButton.setEnabled(false);
+            itemizeTextButton.setEnabled(false);
         }
         return displayTextPanel;
     }
@@ -136,8 +170,10 @@ import java.util.Calendar;
         // Panel to display a table with the items interpreted from the text
         JPanel receiptItemsPanel = new JPanel();
         receiptItemsPanel.setLayout(new BorderLayout());
+        JPanel centralItemsPanel = new JPanel();
+        centralItemsPanel.setLayout(new BorderLayout());
         receiptItemsTable = new JTable();
-        receiptItemsPanel.add(new JScrollPane(receiptItemsTable), BorderLayout.CENTER);
+        centralItemsPanel.add(new JScrollPane(receiptItemsTable), BorderLayout.CENTER);
         // Add select boxes to input the date when the receipt was obtained manually
         // For receipts not obtained on the current date
         JPanel customDatePanel = new JPanel(new GridLayout(1, 4));
@@ -156,13 +192,17 @@ import java.util.Calendar;
         }
         JButton setDateButton = new JButton("Set Receipt Date");
         setDateButton.addActionListener(e -> {
-            customReceiptDate = customDateYearBox.getSelectedItem() + "-" + customDateMonthBox.getSelectedItem() + "-" + customDateDayBox.getSelectedItem();
+            customReceiptDate = customDateYearBox.getSelectedItem() + "-" + String.format("%02d", customDateMonthBox.getSelectedItem()) + "-" + String.format("%02d", customDateDayBox.getSelectedItem());
         });
         customDatePanel.add(customDateDayBox);
         customDatePanel.add(customDateMonthBox);
         customDatePanel.add(customDateYearBox);
         customDatePanel.add(setDateButton);
-        receiptItemsPanel.add(customDatePanel, BorderLayout.NORTH);
+        // Finish central panel, then add it to main panel
+        centralItemsPanel.add(customDatePanel, BorderLayout.SOUTH);
+        receiptItemsPanel.add(centralItemsPanel, BorderLayout.CENTER);
+        receiptItemsLabel = new JLabel("Receipt Items:", SwingConstants.CENTER);
+        receiptItemsPanel.add(receiptItemsLabel, BorderLayout.NORTH);
         // Button to save the items extracted from the OCRed text into the database
         saveItemsButton = new JButton("Save Receipt");
         saveItemsButton.addActionListener(new SaveItemsListener());
@@ -181,7 +221,8 @@ import java.util.Calendar;
         // panel to select the time window for the query
         JPanel chooseTimePanel = new JPanel();
         chooseTimePanel.setLayout(new GridLayout(1, 2));
-        JLabel queryLabel = new JLabel("Time window for receipts:");
+        JLabel queryLabel = new JLabel("Time window for receipts:", SwingConstants.CENTER);
+        
         JComboBox<String> selectQueryTimeWindow = new JComboBox<String>();
         for (int i = 1; i <= 12; i++) {
             selectQueryTimeWindow.addItem(i + " months");
@@ -245,7 +286,8 @@ import java.util.Calendar;
             JComboBox<Integer> cb = (JComboBox<Integer>) e.getSource();
             selectedBarCharItemsNum = (int) cb.getSelectedItem();
         });
-        JLabel selectNumLabel = new JLabel("    Number of frequency plot items:");
+        JLabel selectNumLabel = new JLabel("Number of frequency plot items:", SwingConstants.CENTER);
+        selectNumLabel.setFont(new Font("Calibri", Font.BOLD, 16));
         // Buttons to plot charts and to clear charts
         plotChartsButton = new JButton("Plot Charts");
         plotChartsButton.addActionListener(new PlotChartListener());
@@ -366,9 +408,9 @@ import java.util.Calendar;
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
+            Integer parentPanelWidth = this.getParent().getWidth();
+            Integer parentPanelHeight = this.getParent().getHeight();
             if (receiptImage != null && receiptImage.getWidth() > 0 && receiptImage.getHeight() > 0) {
-                Integer parentPanelWidth = this.getParent().getWidth();
-                Integer parentPanelHeight = this.getParent().getHeight();
                 System.out.println("Frame dimensions: " + parentPanelWidth + "x" + parentPanelHeight);
                 // Scale image so it can be viewed in image panel
                 int newWidth = parentPanelWidth;
@@ -385,6 +427,12 @@ import java.util.Calendar;
                 } else {
                     g.drawImage(scaledImage, 0, 0, this);
                 }
+            } else {
+                String text = "Receipt image will be displayed here";
+                FontMetrics fm = g.getFontMetrics();
+                int x = (parentPanelWidth - fm.stringWidth(text)) / 2;
+                int y = ((parentPanelHeight - fm.getHeight()) / 2) + fm.getAscent();
+                g.drawString(text, x, y);
             }
         }
     }
@@ -411,6 +459,8 @@ import java.util.Calendar;
                     System.out.println("Image loaded successfully: " + receiptImage.getWidth() + "x" + receiptImage.getHeight());
                     // Enable extract text button
                     extractTextButton.setEnabled(true);
+                    textArea.setEditable(true);
+                    textArea.setEnabled(true);
                 } catch (IOException ex){
                     System.out.println("Error reading image file");
                     JOptionPane.showMessageDialog(null, "Error reading image file", "Error", JOptionPane.ERROR_MESSAGE);
@@ -431,23 +481,34 @@ import java.util.Calendar;
                 System.out.println("Extracted text:");
                 System.out.println(extractedText);
                 textArea.setText(extractedText);
+                itemizeTextButton.setEnabled(true);
             } catch (Exception ex) {
                 System.out.println("Error extracting text: " + ex.getMessage());
                 JOptionPane.showMessageDialog(null, "Error extracting text: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
+        };
+    };
+
+    private class ItemizeTextListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
             try { // Crate a receipt object to extract items
-                Receipt receipt = new Receipt(extractedText);
+                Receipt receipt = new Receipt(textArea.getText());
                 receiptItemsTable.setModel(new DefaultTableModel(
                     receipt.itemsToDataArray(), 
                     new String[] {"Item", "VAT", "Price"}
                 ));
                 saveItemsButton.setEnabled(true);
+                // save receipt total paid for display in header of receipt items table
+                receiptTotalPaid = receipt.getTotalPaid();
+                receiptItemsLabel.setText("Receipt items - Total Paid: " + receiptTotalPaid);
+                receiptItemsLabel.setFont(new Font("Calibri", Font.BOLD, 16));
             } catch (Exception ex) {
                 System.out.println("Error extracting items: " + ex.getMessage());
                 JOptionPane.showMessageDialog(null, "Error extracting receipt items from text: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             };
-        };
-    };
+        }
+     }
 
     // Class to handle save items button click
     private class SaveItemsListener implements ActionListener {
@@ -462,7 +523,7 @@ import java.util.Calendar;
                 receiptDAO.createTable();
                 DatabaseConfig.ReceiptItemDAO receiptItemDAO = new DatabaseConfig.ReceiptItemDAO();
                 receiptItemDAO.createTable();
-                Receipt receipt = new Receipt(extractedText);
+                Receipt receipt = new Receipt(textArea.getText());
                 if (customReceiptDate != null && !customReceiptDate.isEmpty()) {
                     // change receipt date from default current date value to selected custom date
                     try {
@@ -574,6 +635,46 @@ import java.util.Calendar;
         }
     }
 
+    // Style class
+    private class StyleFormatter {
+        // Colors
+        public static final Color darkGreen = Color.decode("#16821a");
+        public static final Color lightGreen = Color.decode("#dbffe4");
+        public static final Color darkRed = Color.decode("#6e143b");
+        public static final Color lightYellow = Color.decode("#f2f1d8");
+        // Fonts
+        public static final Font headerFont = new Font("Calibri", Font.BOLD, 16);
+        
+        // Set global styles using UIManager
+        private static void setGlobalStyles() {
+            UIManager.put("Label.font", headerFont);
+            UIManager.put("Label.foreground", lightYellow);
+            UIManager.put("Label.background", darkGreen);
+            UIManager.put("Label.border", new LineBorder(darkRed, 1)); // not working 
+            UIManager.put("Label.opaque", true);
+
+            UIManager.put("Button.background", lightGreen);
+            UIManager.put("TextField.background", lightGreen);
+            UIManager.put("CheckBox.background", lightGreen);
+            UIManager.put("Panel.background", lightGreen);  // Default panel color
+        }
+
+        // Apply styles recursively
+        private static void applyStylesRecursively(Container container) {
+            for (Component component : container.getComponents()) {
+                if (component instanceof JComponent) {
+                    ((JComponent) component).updateUI();
+                }
+                if (component instanceof JLabel) {
+                    JLabel label = (JLabel) component;
+                    label.setOpaque(true);  // Ensures the background is rendered
+                }
+                if (component instanceof Container) {
+                    applyStylesRecursively((Container) component);
+                }
+            }
+        }
+    }
     
     /*
      * End of util classes

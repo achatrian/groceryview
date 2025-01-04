@@ -9,8 +9,10 @@ The receipt data (i.e. the total paid and date) and the items data is stored in 
 
 ## to launch the app:
 One needs to install libtesseract.dylib.
+
 Install it with homebrew
 `brew install tesseract`
+
 On mac one can copy it to:
 `cp /usr/local/Cellar/tesseract/5.5.0/lib /Library/Java/JavaVirtualMachines/temurin-23.jdk/Contents/Home/bin/./libtesseract.dylib`
 or to:

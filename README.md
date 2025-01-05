@@ -1,4 +1,5 @@
 # Groceryview
+### Hobby project
 
 Application to keep track of one's spending at the supermarket by scanning receipts and memorizing items in a database.
 The app can produce simple charts to display trends in one's purchase of groceries.
@@ -28,10 +29,22 @@ Launch the app by running the maven shaded JAR file:
 ![alt text](scan_tab.png)
 
 ## Fixes:
-Launching the app requires installation of `libtesseract.dylib`, and place it in an appropriate folder so it can be found by the tesseract library:
+Launching the app requires installation of `libtesseract.dylib`. In case an error like the following appears when launching the app:
+![alt text](libtesseract.dylib_not_found_error.jpeg)
+follow these instructions to make the library accessible to the app:
 - Install it with homebrew:
     `brew install tesseract`
-- On mac one can copy it to:
-    `cp /usr/local/Cellar/tesseract/5.5.0/lib /Library/Java/JavaVirtualMachines/temurin-23.jdk/Contents/Home/bin/./libtesseract.dylib`
-    or to:
-    `cp /usr/local/Cellar/tesseract/5.5.0/lib /System/Library/Frameworks/tesseract.framework/tesseract`
+- Find the installation location:
+    `brew info tesseract`
+on my machine it is here:
+![alt text](brew_info_tesseract.png)
+- Then copy the library to one of the locations which jna is trying to open. E.g. On mac one can copy it to:
+    `cp /usr/local/Cellar/tesseract/5.5.0/lib/libtesseract.dylib /Library/Java/JavaVirtualMachines/temurin-23.jdk/Contents/Home/bin/./libtesseract.dylib`
+- or to:
+    `cp /usr/local/Cellar/tesseract/5.5.0/lib/libtesseract.dylib /System/Library/Frameworks/tesseract.framework/tesseract`
+- or to any similar location specified by the error message (above).
+
+In case the following error appears:
+![alt text](tessdata_not_found_error.jpeg)
+copy the `tessdata` folder to `/usr/local/share/tessdata`, or any similar location specified by the error. On my mac:
+`cp -r /usr/local/Cellar/tesseract/5.5.0/share/tessdata /usr/local/share/tessdata`

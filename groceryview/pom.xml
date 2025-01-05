@@ -14,8 +14,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>23</maven.compiler.source>
-    <maven.compiler.target>23</maven.compiler.target>
+    <maven.compiler.source>20</maven.compiler.source>
+    <maven.compiler.target>20</maven.compiler.target>
   </properties>
 
   <dependencies>
@@ -35,6 +35,18 @@
       <artifactId>tess4j</artifactId>
       <version>5.5.0</version>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/net.java.dev.jna/jna  used by tesseract to call C libraries (?) -->
+    <dependency>
+        <groupId>net.java.dev.jna</groupId>
+        <artifactId>jna</artifactId>
+        <version>5.16.0</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/net.sourceforge.lept4j/lept4j leptonica used by tesseract -->
+    <dependency>
+        <groupId>net.sourceforge.lept4j</groupId>
+        <artifactId>lept4j</artifactId>
+        <version>1.20.0</version>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -44,6 +56,18 @@
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
       <version>1.2.6</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-core -->
+    <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-core</artifactId>
+        <version>1.5.15</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/com.github.jai-imageio/jai-imageio-core -->
+    <dependency>
+        <groupId>com.github.jai-imageio</groupId>
+        <artifactId>jai-imageio-core</artifactId>
+        <version>1.4.0</version>
     </dependency>
     <dependency>
       <groupId>org.xerial</groupId>
@@ -112,9 +136,8 @@
           <artifactId>maven-project-info-reports-plugin</artifactId>
           <version>3.0.0</version>
         </plugin>
-        <!-- SHADE DOES NOT WORK -->
         <!-- org.apache.maven.lifecycle.LifecycleExecutionException: Failed to execute goal org.apache.maven.plugins:maven-shade-plugin:3.6.0:shade (default) on project groceryview: Error creating shaded jar: Unsupported class file major version 67 -->
-        <!-- <plugin>
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
           <version>3.6.0</version>
@@ -124,7 +147,8 @@
                 <goal>shade</goal>
               </goals>
               <configuration>
-                <minimizeJar>true</minimizeJar>
+                <minimizeJar>false</minimizeJar>
+                <!-- minimizeJar: true - was causing some classes not to be included that broke the app -->
                 <artifactSet>
                   <includes>
                     <include>org.bytedeco:javacv-platform</include>
@@ -133,6 +157,10 @@
                     <include>ch.qos.logback:logback-classic</include>
                     <include>org.xerial:sqlite-jdbc</include>
                     <include>org.jfree:jfreechart</include>
+                    <include>net.java.dev.jna:jna</include>
+                    <include>net.sourceforge.lept4j</include>
+                    <include>ch.qos.logback:logback-core</include>
+                    <include>com.github.jai-imageio:jai-imageio-core</include>
                   </includes>
                 </artifactSet>
                 <transformers>
@@ -141,7 +169,7 @@
               </configuration>
             </execution>
           </executions>
-        </plugin> -->
+        </plugin>
       </plugins>
     <!-- </pluginManagement> -->
   </build>

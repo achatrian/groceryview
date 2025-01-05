@@ -9,8 +9,10 @@ The receipt data (i.e. the total paid and date) and the items data is stored in 
 
 
 ## Launching the app through java command line:
-Launch the app by running the maven shaded JAR file:
-`java  -jar ./groceryview/target/groceryview-0.0.jar`
+- (On mac) Install tesseract with homebrew:
+    `brew install tesseract`
+- Launch the app by running the maven shaded JAR file:
+    `java  -jar ./groceryview/target/groceryview-0.0.jar`
 
 ## App view:
 ### Analysis tab

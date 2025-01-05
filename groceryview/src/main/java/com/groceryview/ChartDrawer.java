@@ -116,6 +116,11 @@ public class ChartDrawer {
                 "Frequency",
                 dataset
         );
+        // changes chart foreground color
+        CategoryPlot plot = frequencyBarChart.getCategoryPlot();
+        BarRenderer renderer = (BarRenderer) plot.getRenderer();
+        Color darkGreen = Color.decode("#16821a");        
+        renderer.setSeriesPaint(0, darkGreen);
         return frequencyBarChart;
     }
     

@@ -601,7 +601,7 @@ import java.util.Calendar;
                 String[] dateParts = dateString.split("-");
                 System.out.println("Date parts: " + dateParts[0] + " " + dateParts[1] + " " + dateParts[2]);
                 calendar.set(Calendar.YEAR, Integer.parseInt(dateParts[0]));
-                calendar.set(Calendar.MONTH, Integer.parseInt(dateParts[1]));
+                calendar.set(Calendar.MONTH, Integer.parseInt(dateParts[1]) - 1); // months are 0-indexed in Calendar
                 calendar.set(Calendar.DATE, Integer.parseInt(dateParts[2]));
                 Date date = calendar.getTime();
                 dates.add(date);
